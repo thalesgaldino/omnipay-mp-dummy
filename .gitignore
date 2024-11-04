@@ -8,3 +8,4 @@ dirlist.app
 dirlist.cache
 dirlist.vendor
 documents/
+.DS_Store

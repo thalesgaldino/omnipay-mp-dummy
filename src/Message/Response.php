@@ -1,7 +1,9 @@
 <?php
+
 namespace Omnipay\Dummy\Message;
 
 use Omnipay\Common\Message\AbstractResponse;
+use Omnipay\Common\Message\RedirectResponseInterface;
 
 /**
  * Dummy Response
@@ -10,11 +12,31 @@ use Omnipay\Common\Message\AbstractResponse;
  *
  * @see \Omnipay\Dummy\Gateway
  */
-class Response extends AbstractResponse
+class Response extends AbstractResponse implements RedirectResponseInterface
 {
     public function isSuccessful()
     {
-        return isset($this->data['success']) && $this->data['success'];
+        return false;
+    }
+
+    public function isRedirect()
+    {
+        return isset($this->data['ticket_url']);
+    }
+
+    public function getRedirectUrl()
+    {
+        return $this->data['ticket_url'];
+    }
+
+    public function getRedirectMethod()
+    {
+        return 'GET';
+    }
+
+    public function getRedirectData()
+    {
+        return null;
     }
 
     public function getTransactionReference()
