@@ -53,6 +53,10 @@ class PixRequest extends AbstractRequest
             "description" => "Compras Pedido #" . $token,
             "payer" => [
                 "email" => $email,
+                "identification" => [
+                    "type" => "CPF",
+                    "number" => "19119119100"
+                ]
             ]
         ];
 
