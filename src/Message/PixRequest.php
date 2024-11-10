@@ -21,12 +21,21 @@ class PixRequest extends AbstractRequest
     {
         $this->validate('amount');
 
+        $gatewayParams = GatewayInfo::getParameters("Dummy");
+        $email = $gatewayParams['pay_email'];
+
+        if ($this->getParameter("card") != null) {
+            $params = $this->getParameter("card")->getParameters();
+            $email = $params['email'];
+        }
+
+        $orderId = (int)explode('-', $this->getTransactionId())[0];
+
         return array(
             'transaction_amount' => $this->getAmount(),
-            "payer_email" => "thalesness@gmail.com",
+            "payer_email" => $email,
             "payment_method_id" => "pix",
-            "transation_id" => $this->getTransactionId(),
-            "token" => $this->getToken()
+            "order_id" => $orderId
         );
     }
 
@@ -35,7 +44,7 @@ class PixRequest extends AbstractRequest
         $paymentMethod = $data['payment_method_id'];
         $transactionAmount = $data['transaction_amount'];
         $email = $data['payer_email'];
-        $token = $data['token'];
+        $order_id = $data['order_id'];
 
         $gatewayParams = GatewayInfo::getParameters("Dummy");
         $accessToken = $gatewayParams['access_token'];
@@ -44,13 +53,13 @@ class PixRequest extends AbstractRequest
 
         $client = new PaymentClient();
         $request_options = new RequestOptions();
-        $request_options->setCustomHeaders(["X-Idempotency-Key: " . $data['token']]);
+        $request_options->setCustomHeaders(["X-Idempotency-Key: " . $order_id]);
 
 
         $req = [
             "payment_method_id" => $paymentMethod,
             "transaction_amount" => (float) $transactionAmount,
-            "description" => "Compras Pedido #" . $token,
+            "description" => "Compras Pedido #" . $order_id,
             "payer" => [
                 "email" => $email,
                 "identification" => [
