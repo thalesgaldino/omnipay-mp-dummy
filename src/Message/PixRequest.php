@@ -4,7 +4,6 @@ namespace Omnipay\Dummy\Message;
 
 use Exception;
 use MercadoPago\Exceptions\MPApiException;
-use Omnipay\Common\Message\AbstractRequest;
 use Omnipay\Common\Message\ResponseInterface;
 use MercadoPago\Client\Payment\PaymentClient;
 use MercadoPago\Client\Common\RequestOptions;
@@ -20,7 +19,7 @@ use SilverStripe\Core\Injector\Injector;
  * This is the request that will be called for any transaction which submits a pix - brazilian payment method,
  * including `authorize` and `purchase`
  */
-class PixRequest extends AbstractRequest
+class PixRequest extends PixAbstractRequest
 {
 
     public function getData()
@@ -34,15 +33,15 @@ class PixRequest extends AbstractRequest
             $params = $this->getParameter("card")->getParameters();
             $email = $params['email'];
         }
-        
+
         $orderId = (int)explode('-', $this->getTransactionId())[0];
 
-        $cart = ShoppingCart::curr();
         $id_type_selected = "CPF";
 
-        if ($cart->IdTypeSelected == "option2") {
+        if ($this->getParameter("IdTypeSelected") == "option2") {
             $id_type_selected = "CNPJ";
         }
+        $identification_id = $this->getParameter("IdentificationId");
 
         return array(
             'transaction_amount' => $this->getAmount(),
@@ -50,7 +49,7 @@ class PixRequest extends AbstractRequest
             "payment_method_id" => "pix",
             "order_id" => $orderId,
             "id_type_selected" => $id_type_selected,
-            "identification_id" => $cart->IdentificationId
+            "identification_id" => $identification_id
         );
     }
 
@@ -86,10 +85,11 @@ class PixRequest extends AbstractRequest
         ];
 
         $payment = null;
+        $data['message'] = 'Falha no pagamento na última tentativa. Tente novamente.';
         try {
             $payment = $client->create($req, $request_options);
             if ($payment !== null) {
-                $data['message'] = $payment->status === "pending" ? 'Pagamento em processo' : 'Falha no pagamento';
+                $data['message'] = $payment->status === "pending" ? 'Pagamento em andamento' : 'Falha no pagamento na última tentativa. Tente novamente.';
                 $data['status'] = $payment->status;
                 $data['success'] = $payment->status === "pending";
                 $data['ticket_url'] = $payment->point_of_interaction->transaction_data->ticket_url ?? "";
@@ -97,12 +97,14 @@ class PixRequest extends AbstractRequest
         } catch (MPApiException $e) {
             Injector::inst()->get(LoggerInterface::class)->error("Payment Error: " . $e->getMessage() . " status code:" . $e->getStatusCode());
             $data['status_code'] = $e->getStatusCode();
+            $data['message'] = $e->getStatusCode() . ': Falha no pagamento na última tentativa. Tente novamente.';
         } catch (Exception $e) {
             Injector::inst()->get(LoggerInterface::class)->error("Error: " . $e->getMessage());
+            $data['status_code'] = $e->getStatusCode();
+            $data['message'] = $e->getStatusCode() . ': Falha no pagamento na última tentativa. Tente novamente.';
         }
 
         if ($payment == null) {
-            $data['message'] = 'Falha no pagamento. Por favor tente novamente mais tarde';
             $data['status'] = null;
             $data['success'] = false;
             $data['ticket_url'] = null;
