@@ -16,8 +16,6 @@ class CreditCardRequest extends AbstractRequest
     {
         $this->validate('amount', 'card');
 
-        $this->getCard()->validate();
-
         return array('amount' => $this->getAmount());
     }
 
