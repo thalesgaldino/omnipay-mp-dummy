@@ -22,7 +22,7 @@ class CreditCardRequest extends AbstractRequest
     public function sendData($data)
     {
         $data['reference'] = uniqid();
-        $data['success'] = 0 === substr($this->getCard()->getNumber(), -1, 1) % 2;
+        $data['success'] = true;
         $data['message'] = $data['success'] ? 'Success' : 'Failure';
 
         return $this->response = new Response($this, $data);
